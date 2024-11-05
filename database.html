@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database View - Route Optimization API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            cursor: none;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #000;
+            color: white;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .nav-logo {
+            color: white;
+            text-decoration: none;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: white;
+        }
+
+        .container {
+            padding: 8rem 2rem 4rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 4rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to right, #fff, #b3b3b3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .data-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .data-item {
+            background: rgba(76, 0, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid rgba(76, 0, 255, 0.2);
+        }
+
+        .data-item h3 {
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+
+        .data-item p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        .loading {
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .error {
+            color: #ff4444;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        /* Keep the same glow and cursor styles from index.html */
+        .glow {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: rgba(76, 0, 255, 0.3);
+            filter: blur(80px);
+            animation: float 15s infinite ease-in-out;
+            z-index: -1;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(300px, 200px) scale(1.2); }
+            50% { transform: translate(-200px, 400px) scale(0.8); }
+            75% { transform: translate(-400px, -200px) scale(1.1); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        /* Custom cursor styles */
+        * {
+            cursor: none; /* Hide the default cursor */
+        }
+
+        .cursor {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+        }
+
+        .cursor-follower {
+            width: 30px;
+            height: 30px;
+            background: rgba(76, 0, 255, 0.5);
+            border-radius: 50%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: all 0.1s ease;
+            box-shadow: 0 0 20px rgba(76, 0, 255, 0.5);
+        }
+
+        /* Hover effects */
+        a:hover ~ .cursor-follower,
+        button:hover ~ .cursor-follower,
+        .data-item:hover ~ .cursor-follower {
+            transform: translate(-50%, -50%) scale(1.5);
+            background: rgba(76, 0, 255, 0.8);
+        }
+
+        @keyframes flash {
+            0% { background: rgba(76, 0, 255, 0.2); }
+            100% { background: rgba(76, 0, 255, 0.1); }
+        }
+
+        .status-indicator {
+            position: fixed;
+            top: 5rem;
+            right: 2rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background: rgba(76, 0, 255, 0.2);
+            color: white;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 1000;
+        }
+
+        .status-indicator::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #64f4d6;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="nav-logo">Route Optimization API</a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/database.html" class="nav-link">Database</a>
+            <a href="/docs" class="nav-link" target="_blank">API Docs</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="section" id="addresses">
+            <h2>Addresses</h2>
+            <div class="data-grid"></div>
+        </div>
+
+        <div class="section" id="channels">
+            <h2>Channels</h2>
+            <div class="data-grid"></div>
+        </div>
+
+        <div class="section" id="customers">
+            <h2>Customers</h2>
+            <div class="data-grid"></div>
+        </div>
+
+        <div class="section" id="salesreps">
+            <h2>Sales Representatives</h2>
+            <div class="data-grid"></div>
+        </div>
+
+        <div class="section" id="routes">
+            <h2>Routes</h2>
+            <div class="data-grid"></div>
+        </div>
+    </div>
+
+    <!-- Add cursor elements after body tag -->
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+
+    <script>
+        // Create glowing balls
+        function createGlowingBalls() {
+            const colors = [
+                'rgba(76, 0, 255, 0.3)',
+                'rgba(120, 0, 255, 0.3)',
+                'rgba(59, 130, 246, 0.3)'
+            ];
+            
+            for (let i = 0; i < 3; i++) {
+                const ball = document.createElement('div');
+                ball.className = 'glow';
+                ball.style.top = `${Math.random() * 100}%`;
+                ball.style.left = `${Math.random() * 100}%`;
+                ball.style.background = colors[i];
+                ball.style.animationDelay = `-${i * 5}s`;
+                document.body.appendChild(ball);
+            }
+        }
+
+        // Modified fetch and display functions with real-time updates
+        async function fetchData(endpoint) {
+            try {
+                const response = await fetch(`/${endpoint}/`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                return await response.json();
+            } catch (error) {
+                console.error('Error:', error);
+                return null;
+            }
+        }
+
+        async function displayData(endpoint, containerId) {
+            const container = document.querySelector(`#${containerId} .data-grid`);
+            const data = await fetchData(endpoint);
+            
+            if (!data) {
+                container.innerHTML = '<div class="error">Failed to load data</div>';
+                return;
+            }
+
+            if (data.length === 0) {
+                container.innerHTML = '<div class="loading">No data available</div>';
+                return;
+            }
+
+            // Create new HTML content
+            const newContent = data.map(item => `
+                <div class="data-item">
+                    <h3>${item.name || item.street || 'ID: ' + item.route_id}</h3>
+                    <p>${JSON.stringify(item, null, 2)}</p>
+                </div>
+            `).join('');
+
+            // Only update if content has changed
+            if (container.innerHTML !== newContent) {
+                container.innerHTML = newContent;
+                // Add a subtle flash effect for updated items
+                container.querySelectorAll('.data-item').forEach(item => {
+                    item.style.animation = 'flash 1s';
+                });
+            }
+        }
+
+        // Function to update all data
+        async function updateAllData() {
+            await Promise.all([
+                displayData('addresses', 'addresses'),
+                displayData('channels', 'channels'),
+                displayData('customers', 'customers'),
+                displayData('salesreps', 'salesreps'),
+                displayData('routes', 'routes')
+            ]);
+        }
+
+        // Initialize
+        createGlowingBalls();
+        updateAllData();
+
+        // Add status indicator
+        const statusIndicator = document.createElement('div');
+        statusIndicator.className = 'status-indicator';
+        document.querySelector('.container').prepend(statusIndicator);
+
+        // Update status indicator with correct timing
+        let lastUpdateTime = new Date();
+        
+        // Update the display immediately after data fetch
+        async function updateAllDataWithStatus() {
+            await updateAllData();
+            lastUpdateTime = new Date();
+        }
+
+        // Update the time display every second
+        setInterval(() => {
+            const now = new Date();
+            const seconds = Math.round((now - lastUpdateTime) / 1000);
+            
+            let timeText;
+            if (seconds < 60) {
+                timeText = `${seconds} seconds ago`;
+            } else if (seconds < 3600) {
+                const minutes = Math.floor(seconds / 60);
+                timeText = `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            } else {
+                const hours = Math.floor(seconds / 3600);
+                timeText = `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            }
+            
+            statusIndicator.textContent = `Live Updates • ${timeText}`;
+        }, 1000);
+
+        // Set up real-time updates every 15 seconds
+        setInterval(updateAllDataWithStatus, 15000);
+
+        // Add cursor animation code
+        const cursor = document.querySelector('.cursor');
+        const cursorFollower = document.querySelector('.cursor-follower');
+        let mouseX = 0;
+        let mouseY = 0;
+        let followerX = 0;
+        let followerY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            // Update cursor position immediately
+            cursor.style.left = mouseX + 'px';
+            cursor.style.top = mouseY + 'px';
+        });
+
+        // Smooth follower animation
+        function animate() {
+            // Smooth follower movement
+            followerX += (mouseX - followerX) * 0.1;
+            followerY += (mouseY - followerY) * 0.1;
+            
+            cursorFollower.style.left = followerX + 'px';
+            cursorFollower.style.top = followerY + 'px';
+            
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // Hover effects
+        const hoverElements = document.querySelectorAll('a, button, .data-item');
+        hoverElements.forEach(element => {
+            element.addEventListener('mouseenter', () => {
+                cursor.style.transform = 'translate(-50%, -50%) scale(2)';
+                cursorFollower.style.transform = 'translate(-50%, -50%) scale(2)';
+            });
+            
+            element.addEventListener('mouseleave', () => {
+                cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+                cursorFollower.style.transform = 'translate(-50%, -50%) scale(1)';
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Optimization API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            cursor: none; /* Hide the default cursor */
+        }
+
+        body {
+            min-height: 100vh;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gradient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, 
+                rgba(76, 0, 255, 0.1),
+                rgba(76, 0, 255, 0.05),
+                transparent 60%);
+        }
+
+        .container {
+            text-align: center;
+            padding: 8rem 2rem 4rem;
+            max-width: 800px;
+            width: 90%;
+            position: relative;
+            z-index: 2;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to right, #fff, #b3b3b3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        p {
+            font-size: 1.25rem;
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
+            color: rgba(255, 255, 255, 0.8);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .docs-button {
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            background: white;
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .docs-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+
+        .feature-card {
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .feature-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .feature-card h3 {
+            margin-bottom: 0.75rem;
+            color: white;
+            font-size: 1.25rem;
+        }
+
+        .feature-card p {
+            font-size: 1rem;
+            margin-bottom: 0;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .glow {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: rgba(76, 0, 255, 0.3);
+            filter: blur(80px);
+            animation: float 15s infinite ease-in-out;
+            z-index: 1;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+            25% {
+                transform: translate(300px, 200px) scale(1.2);
+            }
+            50% {
+                transform: translate(-200px, 400px) scale(0.8);
+            }
+            75% {
+                transform: translate(-400px, -200px) scale(1.1);
+            }
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+        }
+
+        /* Custom cursor styles */
+        .cursor {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+        }
+
+        .cursor-follower {
+            width: 30px;
+            height: 30px;
+            background: rgba(76, 0, 255, 0.5);
+            border-radius: 50%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: all 0.1s ease;
+            box-shadow: 0 0 20px rgba(76, 0, 255, 0.5);
+        }
+
+        /* Hover effects */
+        a:hover ~ .cursor-follower,
+        button:hover ~ .cursor-follower,
+        .feature-card:hover ~ .cursor-follower {
+            transform: translate(-50%, -50%) scale(1.5);
+            background: rgba(76, 0, 255, 0.8);
+        }
+
+        /* Navbar styles */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .nav-logo {
+            color: white;
+            text-decoration: none;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="gradient-bg"></div>
+
+    <!-- Add navbar here -->
+    <nav class="navbar">
+        <a href="/" class="nav-logo">Route Optimization API</a>
+        <div class="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            <a href="/database.html" class="nav-link">Database</a>
+            <a href="/docs" class="nav-link" target="_blank">API Docs</a>
+        </div>
+    </nav>
+
+    <div class="cursor"></div>
+    <div class="cursor-follower"></div>
+
+    <script>
+        function createGlowingBalls() {
+            const colors = [
+                'rgba(76, 0, 255, 0.3)',
+                'rgba(120, 0, 255, 0.3)',
+                'rgba(59, 130, 246, 0.3)'
+            ];
+            
+            const positions = [
+                { top: '30%', left: '30%', size: 400 },
+                { top: '50%', left: '60%', size: 500 },
+                { top: '70%', left: '40%', size: 450 }
+            ];
+            
+            for (let i = 0; i < 3; i++) {
+                const ball = document.createElement('div');
+                ball.className = 'glow';
+                
+                ball.style.top = positions[i].top;
+                ball.style.left = positions[i].left;
+                ball.style.width = `${positions[i].size}px`;
+                ball.style.height = `${positions[i].size}px`;
+                ball.style.background = colors[i];
+                
+                ball.style.animationDuration = `${15 + i * 8}s`;
+                ball.style.animationDelay = `-${i * 5}s`;
+                
+                document.body.appendChild(ball);
+            }
+        }
+
+        // Cursor animation
+        const cursor = document.querySelector('.cursor');
+        const cursorFollower = document.querySelector('.cursor-follower');
+        let mouseX = 0;
+        let mouseY = 0;
+        let followerX = 0;
+        let followerY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            // Update cursor position immediately
+            cursor.style.left = mouseX + 'px';
+            cursor.style.top = mouseY + 'px';
+        });
+
+        // Smooth follower animation
+        function animate() {
+            // Smooth follower movement
+            followerX += (mouseX - followerX) * 0.1;
+            followerY += (mouseY - followerY) * 0.1;
+            
+            cursorFollower.style.left = followerX + 'px';
+            cursorFollower.style.top = followerY + 'px';
+            
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // Hover effects
+        const hoverElements = document.querySelectorAll('a, button, .feature-card');
+        hoverElements.forEach(element => {
+            element.addEventListener('mouseenter', () => {
+                cursor.style.transform = 'translate(-50%, -50%) scale(2)';
+                cursorFollower.style.transform = 'translate(-50%, -50%) scale(2)';
+            });
+            
+            element.addEventListener('mouseleave', () => {
+                cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+                cursorFollower.style.transform = 'translate(-50%, -50%) scale(1)';
+            });
+        });
+
+        // Create the glowing balls
+        createGlowingBalls();
+    </script>
+
+    <div class="container">
+        <h1>Route Optimization API</h1>
+        <p>A powerful solution for managing and optimizing your logistics operations with real-time route planning and distribution management.</p>
+        
+        <a href="/docs" class="docs-button" target="_blank">View Documentation</a>
+
+        <div class="features">
+            <div class="feature-card">
+                <h3>Routes</h3>
+                <p>Optimize delivery routes with real-time updates</p>
+            </div>
+            <div class="feature-card">
+                <h3>Channels</h3>
+                <p>Manage distribution channels efficiently</p>
+            </div>
+            <div class="feature-card">
+                <h3>Tracking</h3>
+                <p>Monitor deliveries in real-time</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
